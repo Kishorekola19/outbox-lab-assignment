@@ -25,6 +25,7 @@ app.use(
       if (!origin) return callback(null, true);
       if (
         origin === config.frontendUrl ||
+        origin.endsWith('.vercel.app') ||
         origin.endsWith('.onrender.com') ||
         origin.includes('localhost') ||
         origin.includes('127.0.0.1')
