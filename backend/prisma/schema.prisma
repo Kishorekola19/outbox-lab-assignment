@@ -1,0 +1,88 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String           @id @default(uuid())
+  googleId        String?          @unique
+  name            String
+  email           String           @unique
+  avatar          String?
+  passwordHash    String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  emailSchedules  EmailSchedule[]
+  slackConnection SlackConnection?
+  gmailConnection GmailConnection?
+
+  @@index([email])
+}
+
+model EmailSchedule {
+  id                 String           @id @default(uuid())
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject            String
+  body               String
+  sender             String
+  startTime          DateTime
+  delayBetweenEmails Int              @default(2)
+  hourlyLimit        Int              @default(100)
+  status             String           @default("SCHEDULED")
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  recipients         EmailRecipient[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model EmailRecipient {
+  id             String        @id @default(uuid())
+  scheduleId     String
+  schedule       EmailSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  email          String
+  status         String        @default("PENDING")
+  scheduledAt    DateTime
+  sentAt         DateTime?
+  failedAt       DateTime?
+  errorMessage   String?
+  gmailMessageId String?
+  idempotencyKey String        @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([scheduleId])
+  @@index([email])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model SlackConnection {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slackUserId    String?
+  slackChannelId String?
+  accessToken    String
+  connected      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model GmailConnection {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email        String
+  refreshToken String
+  accessToken  String?
+  connected    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
